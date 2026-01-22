@@ -19,8 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Role & User Management API (Admin only)
     Route::middleware('role:Admin')->group(function () {
         Route::apiResource('roles', RoleController::class);
-        Route::get('users', [UserController::class, 'index']);
-        Route::get('users/{user}', [UserController::class, 'show']);
+        Route::apiResource('users', UserController::class);
         Route::put('users/{user}/role', [UserController::class, 'updateRole']);
     });
 });

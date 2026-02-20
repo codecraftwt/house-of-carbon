@@ -16,6 +16,7 @@ class UserController extends Controller
     #[OA\Get(
         path: "/api/users",
         summary: "Display a listing of the users with search and filters",
+        description: "Admin only.",
         tags: ["User Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -26,7 +27,24 @@ class UserController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: "List of users with stats"),
-            new OA\Response(response: 401, description: "Unauthenticated")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            )
         ]
     )]
     public function index(Request $request)
@@ -80,6 +98,7 @@ class UserController extends Controller
     #[OA\Post(
         path: "/api/users",
         summary: "Create a new user with company details",
+        description: "Admin only.",
         tags: ["User Management"],
         security: [["bearerAuth" => []]],
         requestBody: new OA\RequestBody(
@@ -93,14 +112,46 @@ class UserController extends Controller
                     new OA\Property(property: "role_id", type: "integer", example: 2),
                     new OA\Property(property: "status", type: "string", example: "active"),
                     new OA\Property(property: "company_name", type: "string", example: "Tech Corp"),
+                    new OA\Property(property: "company_email", type: "string", example: "billing@techcorp.com"),
                     new OA\Property(property: "company_phone", type: "string", example: "1234567890"),
-                    new OA\Property(property: "company_address", type: "string", example: "123 Main St")
+                    new OA\Property(property: "company_address", type: "string", example: "123 Main St"),
+                    new OA\Property(property: "city", type: "string", example: "Mumbai"),
+                    new OA\Property(property: "state", type: "string", example: "Maharashtra"),
+                    new OA\Property(property: "country", type: "string", example: "India"),
+                    new OA\Property(property: "zip_code", type: "string", example: "400001")
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 201, description: "User created"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "errors", type: "object", example: ["email" => ["The email has already been taken."]])
+                    ]
+                )
+            )
         ]
     )]
     public function store(Request $request)
@@ -159,6 +210,7 @@ class UserController extends Controller
     #[OA\Put(
         path: "/api/users/{user}/role",
         summary: "Update the user's role",
+        description: "Admin only.",
         tags: ["User Role Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -175,7 +227,34 @@ class UserController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: "User role updated"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "errors", type: "object", example: ["role_id" => ["The selected role id is invalid."]])
+                    ]
+                )
+            )
         ]
     )]
     public function updateRole(Request $request, User $user)
@@ -205,6 +284,7 @@ class UserController extends Controller
     #[OA\Get(
         path: "/api/users/{user}",
         summary: "Display the specified user",
+        description: "Admin only.",
         tags: ["User Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -212,7 +292,33 @@ class UserController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: "User details"),
-            new OA\Response(response: 404, description: "User not found")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "User not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "User not found")
+                    ]
+                )
+            )
         ]
     )]
     public function show(User $user)
@@ -226,6 +332,7 @@ class UserController extends Controller
     #[OA\Put(
         path: "/api/users/{user}",
         summary: "Update the specified user and company details",
+        description: "Admin only.",
         tags: ["User Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -239,13 +346,47 @@ class UserController extends Controller
                     new OA\Property(property: "email", type: "string"),
                     new OA\Property(property: "role_id", type: "integer"),
                     new OA\Property(property: "status", type: "string"),
-                    new OA\Property(property: "company_name", type: "string")
+                    new OA\Property(property: "company_name", type: "string"),
+                    new OA\Property(property: "company_email", type: "string"),
+                    new OA\Property(property: "company_phone", type: "string"),
+                    new OA\Property(property: "company_address", type: "string"),
+                    new OA\Property(property: "city", type: "string"),
+                    new OA\Property(property: "state", type: "string"),
+                    new OA\Property(property: "country", type: "string"),
+                    new OA\Property(property: "zip_code", type: "string")
                 ]
             )
         ),
         responses: [
             new OA\Response(response: 200, description: "User updated"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "errors", type: "object", example: ["email" => ["The email has already been taken."]])
+                    ]
+                )
+            )
         ]
     )]
     public function update(Request $request, User $user)
@@ -293,6 +434,7 @@ class UserController extends Controller
     #[OA\Delete(
         path: "/api/users/{user}",
         summary: "Delete the specified user",
+        description: "Admin only.",
         tags: ["User Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -300,7 +442,33 @@ class UserController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: "User deleted"),
-            new OA\Response(response: 404, description: "User not found")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "User not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "User not found")
+                    ]
+                )
+            )
         ]
     )]
     public function destroy(User $user)

@@ -13,12 +13,29 @@ class RoleController extends Controller
     #[OA\Get(
         path: "/api/roles",
         summary: "Display a listing of the roles",
+        description: "Admin only.",
         tags: ["Role Management"],
         security: [["bearerAuth" => []]],
         responses: [
             new OA\Response(response: 200, description: "List of roles"),
-            new OA\Response(response: 401, description: "Unauthenticated"),
-            new OA\Response(response: 403, description: "Unauthorized")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            )
         ]
     )]
     public function index()
@@ -33,6 +50,7 @@ class RoleController extends Controller
     #[OA\Post(
         path: "/api/roles",
         summary: "Store a newly created role",
+        description: "Admin only.",
         tags: ["Role Management"],
         security: [["bearerAuth" => []]],
         requestBody: new OA\RequestBody(
@@ -46,7 +64,34 @@ class RoleController extends Controller
         ),
         responses: [
             new OA\Response(response: 201, description: "Role created"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "errors", type: "object", example: ["name" => ["The name field is required."]])
+                    ]
+                )
+            )
         ]
     )]
     public function store(Request $request)
@@ -76,6 +121,7 @@ class RoleController extends Controller
     #[OA\Get(
         path: "/api/roles/{role}",
         summary: "Display the specified role",
+        description: "Admin only.",
         tags: ["Role Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -83,7 +129,33 @@ class RoleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: "Role details"),
-            new OA\Response(response: 404, description: "Role not found")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Role not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Role not found")
+                    ]
+                )
+            )
         ]
     )]
     public function show(Role $role)
@@ -97,6 +169,7 @@ class RoleController extends Controller
     #[OA\Put(
         path: "/api/roles/{role}",
         summary: "Update the specified role",
+        description: "Admin only.",
         tags: ["Role Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -113,7 +186,34 @@ class RoleController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: "Role updated"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "errors", type: "object", example: ["name" => ["The name has already been taken."]])
+                    ]
+                )
+            )
         ]
     )]
     public function update(Request $request, Role $role)
@@ -143,6 +243,7 @@ class RoleController extends Controller
     #[OA\Delete(
         path: "/api/roles/{role}",
         summary: "Remove the specified role",
+        description: "Admin only.",
         tags: ["Role Management"],
         security: [["bearerAuth" => []]],
         parameters: [
@@ -150,8 +251,43 @@ class RoleController extends Controller
         ],
         responses: [
             new OA\Response(response: 200, description: "Role deleted"),
-            new OA\Response(response: 400, description: "Cannot delete role assigned to users"),
-            new OA\Response(response: 404, description: "Role not found")
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Unauthorized",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthorized")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: "Cannot delete role assigned to users",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "status", type: "string", example: "error"),
+                        new OA\Property(property: "message", type: "string", example: "Cannot delete role assigned to users")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "Role not found",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Role not found")
+                    ]
+                )
+            )
         ]
     )]
     public function destroy(Role $role)

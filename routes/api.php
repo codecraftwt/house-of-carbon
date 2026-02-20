@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\QuotationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -21,5 +22,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('users', UserController::class);
         Route::put('users/{user}/role', [UserController::class, 'updateRole']);
+
+        // Quotations API
+        Route::get('quotations', [QuotationController::class, 'index']);
+        Route::post('quotations', [QuotationController::class, 'store']);
+        Route::get('quotations/{id}', [QuotationController::class, 'show']);
+        Route::delete('quotations/{id}', [QuotationController::class, 'destroy']);
     });
 });

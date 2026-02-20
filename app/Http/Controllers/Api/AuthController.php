@@ -37,7 +37,12 @@ class AuthController extends Controller
             ),
             new OA\Response(
                 response: 401,
-                description: "Unauthenticated"
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
             )
         ]
     )]
@@ -75,7 +80,15 @@ class AuthController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "errors", type: "object", example: ["email" => ["The email field is required."]])
+                    ]
+                )
+            )
         ]
     )]
     public function register(Request $request)
@@ -136,7 +149,15 @@ class AuthController extends Controller
                     ]
                 )
             ),
-            new OA\Response(response: 401, description: "Invalid login details")
+            new OA\Response(
+                response: 401,
+                description: "Invalid login details",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invalid login details")
+                    ]
+                )
+            )
         ]
     )]
     public function login(Request $request)
@@ -178,7 +199,16 @@ class AuthController extends Controller
         tags: ["Authentication"],
         security: [["bearerAuth" => []]],
         responses: [
-            new OA\Response(response: 200, description: "Logged out successfully")
+            new OA\Response(response: 200, description: "Logged out successfully"),
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated.")
+                    ]
+                )
+            )
         ]
     )]
     public function logout(Request $request)
@@ -205,7 +235,15 @@ class AuthController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: "Reset link sent"),
-            new OA\Response(response: 422, description: "Validation error")
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "errors", type: "object", example: ["email" => ["The selected email is invalid."]])
+                    ]
+                )
+            )
         ]
     )]
     public function forgotPassword(Request $request)
@@ -243,7 +281,24 @@ class AuthController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: "Password reset successful"),
-            new OA\Response(response: 400, description: "Invalid token or email")
+            new OA\Response(
+                response: 400,
+                description: "Invalid token or email",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Invalid token or email")
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "errors", type: "object", example: ["password" => ["The password field confirmation does not match."]])
+                    ]
+                )
+            )
         ]
     )]
     public function resetPassword(Request $request)

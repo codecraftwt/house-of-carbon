@@ -15,10 +15,22 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!$request->user() || !in_array($request->user()->role->name, $roles)) {
+        if (!$request->user() || !$request->user()->role) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $userRole = $this->normalizeRole($request->user()->role->name);
+        $allowed = array_map([$this, 'normalizeRole'], $roles);
+
+        if (!in_array($userRole, $allowed, true)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         return $next($request);
+    }
+
+    private function normalizeRole(string $role): string
+    {
+        return strtolower(str_replace([' ', '-'], '_', trim($role)));
     }
 }

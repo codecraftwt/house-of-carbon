@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
@@ -110,6 +111,15 @@ class RoleController extends Controller
         $role = Role::create([
             'name' => $request->name,
         ]);
+
+        AuditLogger::log(
+            'Create',
+            'Role',
+            $role->id,
+            'Created role ' . $role->name,
+            ['role' => $role->name],
+            $request
+        );
 
         return response()->json([
             'status' => 'success',
@@ -233,6 +243,15 @@ class RoleController extends Controller
             'name' => $request->name,
         ]);
 
+        AuditLogger::log(
+            'Update',
+            'Role',
+            $role->id,
+            'Updated role ' . $role->name,
+            ['role' => $role->name],
+            $request
+        );
+
         return response()->json([
             'status' => 'success',
             'message' => 'Role updated successfully',
@@ -300,7 +319,17 @@ class RoleController extends Controller
             ], 400);
         }
 
+        $roleName = $role->name;
         $role->delete();
+
+        AuditLogger::log(
+            'Delete',
+            'Role',
+            $role->id,
+            'Deleted role ' . $roleName,
+            ['role' => $roleName],
+            request()
+        );
 
         return response()->json([
             'status' => 'success',

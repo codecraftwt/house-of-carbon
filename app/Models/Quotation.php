@@ -15,7 +15,8 @@ class Quotation extends Model
         'valid_until',
         'total_amount',
         'status',
-        'terms_and_conditions'
+        'terms_and_conditions',
+        'customer_note',
     ];
 
     public function user()

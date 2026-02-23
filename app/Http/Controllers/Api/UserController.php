@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\CompanyDetail;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
@@ -65,9 +66,9 @@ class UserController extends Controller
 
         // Filter by Role Name
         if ($request->filled('role') && $request->role != 'all') {
-            $roleName = $request->input('role');
+            $roleName = $this->normalizeRoleName($request->input('role'));
             $query->whereHas('role', function ($q) use ($roleName) {
-                $q->where('name', $roleName);
+                $q->whereRaw('LOWER(name) = ?', [$roleName]);
             });
         }
 
@@ -104,21 +105,15 @@ class UserController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["name", "email", "password", "role_id"],
+                required: ["name", "email", "password", "role"],
                 properties: [
                     new OA\Property(property: "name", type: "string", example: "John Doe"),
                     new OA\Property(property: "email", type: "string", example: "john@example.com"),
                     new OA\Property(property: "password", type: "string", example: "password123"),
-                    new OA\Property(property: "role_id", type: "integer", example: 2),
+                    new OA\Property(property: "role", type: "string", example: "admin", description: "Role name (admin, customer, supplier, cha, back_office)"),
+                    new OA\Property(property: "role_name", type: "string", example: "customer", description: "Alias for role"),
                     new OA\Property(property: "status", type: "string", example: "active"),
-                    new OA\Property(property: "company_name", type: "string", example: "Tech Corp"),
-                    new OA\Property(property: "company_email", type: "string", example: "billing@techcorp.com"),
-                    new OA\Property(property: "company_phone", type: "string", example: "1234567890"),
-                    new OA\Property(property: "company_address", type: "string", example: "123 Main St"),
-                    new OA\Property(property: "city", type: "string", example: "Mumbai"),
-                    new OA\Property(property: "state", type: "string", example: "Maharashtra"),
-                    new OA\Property(property: "country", type: "string", example: "India"),
-                    new OA\Property(property: "zip_code", type: "string", example: "400001")
+                    new OA\Property(property: "company_name", type: "string", example: "Tech Corp")
                 ]
             )
         ),
@@ -160,16 +155,10 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role_id' => 'required|exists:roles,id',
+            'role' => 'required_without:role_name|string',
+            'role_name' => 'required_without:role|string',
             'status' => 'nullable|string|in:active,inactive',
             'company_name' => 'nullable|string|max:255',
-            'company_email' => 'nullable|email|max:255',
-            'company_phone' => 'nullable|string|max:20',
-            'company_address' => 'nullable|string',
-            'city' => 'nullable|string|max:100',
-            'state' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:100',
-            'zip_code' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -179,26 +168,36 @@ class UserController extends Controller
             ], 422);
         }
 
+        $roleId = $this->resolveRoleId($request);
+        if (!$roleId) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => ['role' => ['The selected role is invalid.']]
+            ], 422);
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => $request->role_id,
+            'role_id' => $roleId,
             'status' => $request->status ?? 'active',
         ]);
 
         if ($request->filled('company_name')) {
             $user->companyDetail()->create($request->only([
                 'company_name',
-                'company_email',
-                'company_phone',
-                'company_address',
-                'city',
-                'state',
-                'country',
-                'zip_code',
             ]));
         }
+
+        AuditLogger::log(
+            'Create',
+            'User',
+            $user->id,
+            'Created user ' . $user->email,
+            ['email' => $user->email],
+            $request
+        );
 
         return response()->json([
             'status' => 'success',
@@ -219,9 +218,10 @@ class UserController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["role_id"],
+                required: ["role"],
                 properties: [
-                    new OA\Property(property: "role_id", type: "integer", example: 2)
+                    new OA\Property(property: "role", type: "string", example: "admin", description: "Role name (admin, customer, supplier, cha, back_office)"),
+                    new OA\Property(property: "role_name", type: "string", example: "customer", description: "Alias for role")
                 ]
             )
         ),
@@ -260,7 +260,8 @@ class UserController extends Controller
     public function updateRole(Request $request, User $user)
     {
         $validator = Validator::make($request->all(), [
-            'role_id' => 'required|exists:roles,id',
+            'role' => 'required_without:role_name|string',
+            'role_name' => 'required_without:role|string',
         ]);
 
         if ($validator->fails()) {
@@ -270,9 +271,26 @@ class UserController extends Controller
             ], 422);
         }
 
+        $roleId = $this->resolveRoleId($request);
+        if (!$roleId) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => ['role' => ['The selected role is invalid.']]
+            ], 422);
+        }
+
         $user->update([
-            'role_id' => $request->role_id,
+            'role_id' => $roleId,
         ]);
+
+        AuditLogger::log(
+            'Update',
+            'User',
+            $user->id,
+            'Updated user role for ' . $user->email,
+            ['role_id' => $request->role_id],
+            $request
+        );
 
         return response()->json([
             'status' => 'success',
@@ -344,16 +362,10 @@ class UserController extends Controller
                 properties: [
                     new OA\Property(property: "name", type: "string"),
                     new OA\Property(property: "email", type: "string"),
-                    new OA\Property(property: "role_id", type: "integer"),
+                    new OA\Property(property: "role", type: "string", description: "Role name (admin, customer, supplier, cha, back_office)"),
+                    new OA\Property(property: "role_name", type: "string", description: "Alias for role"),
                     new OA\Property(property: "status", type: "string"),
-                    new OA\Property(property: "company_name", type: "string"),
-                    new OA\Property(property: "company_email", type: "string"),
-                    new OA\Property(property: "company_phone", type: "string"),
-                    new OA\Property(property: "company_address", type: "string"),
-                    new OA\Property(property: "city", type: "string"),
-                    new OA\Property(property: "state", type: "string"),
-                    new OA\Property(property: "country", type: "string"),
-                    new OA\Property(property: "zip_code", type: "string")
+                    new OA\Property(property: "company_name", type: "string")
                 ]
             )
         ),
@@ -394,7 +406,8 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
-            'role_id' => 'sometimes|required|exists:roles,id',
+            'role' => 'sometimes|string',
+            'role_name' => 'sometimes|string',
             'status' => 'sometimes|nullable|string|in:active,inactive',
             'company_name' => 'sometimes|nullable|string|max:255',
         ]);
@@ -406,29 +419,62 @@ class UserController extends Controller
             ], 422);
         }
 
-        $user->update($request->only(['name', 'email', 'role_id', 'status']));
+        $updates = $request->only(['name', 'email', 'status']);
+
+        if ($request->filled('role') || $request->filled('role_name')) {
+            $roleId = $this->resolveRoleId($request);
+            if (!$roleId) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => ['role' => ['The selected role is invalid.']]
+                ], 422);
+            }
+            $updates['role_id'] = $roleId;
+        }
+
+        $user->update($updates);
 
         if ($request->has('company_name')) {
             $user->companyDetail()->updateOrCreate(
                 ['user_id' => $user->id],
                 $request->only([
                     'company_name',
-                    'company_email',
-                    'company_phone',
-                    'company_address',
-                    'city',
-                    'state',
-                    'country',
-                    'zip_code',
                 ])
             );
         }
+
+        AuditLogger::log(
+            'Update',
+            'User',
+            $user->id,
+            'Updated user ' . $user->email,
+            ['email' => $user->email],
+            $request
+        );
 
         return response()->json([
             'status' => 'success',
             'message' => 'User updated successfully',
             'data' => $user->load(['role', 'companyDetail'])
         ]);
+    }
+
+    private function resolveRoleId(Request $request): ?int
+    {
+        $roleName = $request->input('role') ?? $request->input('role_name');
+        if (!$roleName) {
+            return null;
+        }
+
+        $normalized = $this->normalizeRoleName($roleName);
+        $role = Role::whereRaw('LOWER(name) = ?', [$normalized])->first();
+
+        return $role?->id;
+    }
+
+    private function normalizeRoleName(string $roleName): string
+    {
+        return strtolower(str_replace(['_', '-'], ' ', trim($roleName)));
     }
 
     #[OA\Delete(
@@ -478,6 +524,15 @@ class UserController extends Controller
             $user->companyDetail()->delete();
         }
         $user->delete();
+
+        AuditLogger::log(
+            'Delete',
+            'User',
+            $user->id,
+            'Deleted user ' . $user->email,
+            ['email' => $user->email],
+            request()
+        );
 
         return response()->json([
             'status' => 'success',

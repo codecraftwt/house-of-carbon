@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Role;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
@@ -64,7 +65,7 @@ class AuthController extends Controller
                     new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
                     new OA\Property(property: "password", type: "string", format: "password", example: "password123"),
                     new OA\Property(property: "password_confirmation", type: "string", format: "password", example: "password123"),
-                    new OA\Property(property: "role", type: "string", example: "Customer")
+                    new OA\Property(property: "role", type: "string", example: "customer")
                 ]
             )
         ),
@@ -97,14 +98,20 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|string|exists:roles,name',
+            'role' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $role = Role::where('name', $request->role)->first();
+        $roleName = strtolower(str_replace(['_', '-'], ' ', trim($request->role)));
+        $role = Role::whereRaw('LOWER(name) = ?', [$roleName])->first();
+        if (!$role) {
+            return response()->json([
+                'errors' => ['role' => ['The selected role is invalid.']]
+            ], 422);
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -114,6 +121,15 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        AuditLogger::log(
+            'Create',
+            'User',
+            $user->id,
+            'Registered user ' . $user->email,
+            ['email' => $user->email],
+            $request
+        );
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -185,6 +201,15 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        AuditLogger::log(
+            'Login',
+            'User',
+            $user->id,
+            'User logged in',
+            ['email' => $user->email],
+            $request
+        );
+
         return response()->json([
             'message' => 'Login successful',
             'user' => $user->load('role'),
@@ -213,6 +238,15 @@ class AuthController extends Controller
     )]
     public function logout(Request $request)
     {
+        AuditLogger::log(
+            'Logout',
+            'User',
+            $request->user()?->id,
+            'User logged out',
+            [],
+            $request
+        );
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

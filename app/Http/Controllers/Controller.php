@@ -10,10 +10,7 @@ use OpenApi\Attributes as OA;
     description: "API documentation for House of Carbon project",
     contact: new OA\Contact(email: "admin@houseofcarbon.com")
 )]
-#[OA\Server(
-    url: "http://localhost:8000",
-    description: "Demo API Server"
-)]
+
 #[OA\SecurityScheme(
     securityScheme: "bearerAuth",
     type: "http",

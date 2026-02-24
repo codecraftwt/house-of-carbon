@@ -37,4 +37,8 @@ class Shipment extends Model
     {
         return $this->hasMany(ShipmentDocument::class);
     }
+    public function clearance()
+    {
+        return $this->hasOne(Clearance::class, 'shipment_id', 'id');
+    }
 }
